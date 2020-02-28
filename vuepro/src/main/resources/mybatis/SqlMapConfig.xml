@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+
+   <!-- 定义 别名 -->
+	<typeAliases>
+		<package name="com.cblue.pojo"/>
+	</typeAliases>
+	
+	 <plugins>
+        <plugin interceptor="com.github.pagehelper.PageInterceptor">
+            <!-- 设置数据库类型 Oracle,Mysql,MariaDB,SQLite,Hsqldb,PostgreSQL六种数据库-->        
+            <property name="helperDialect" value="mysql"/>
+        </plugin>
+    </plugins>
+
+    <!-- 加载映射文件
+     不再配置，将来使用spring和mybaits的整合包里的类进行扫描
+     要求：mapper.xml和mapper.java在同一包中
+     -->
+  <!--   <mappers></mappers> -->
+    
+    
+    
+    
+</configuration>

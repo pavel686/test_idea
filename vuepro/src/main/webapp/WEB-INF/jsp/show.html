@@ -1,0 +1,230 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>show.html</title>
+	
+    <meta name="keywords" content="keyword1,keyword2,keyword3">
+    <meta name="description" content="this is my page">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <!--<link rel="stylesheet" type="text/css" href="./styles.css">-->
+    <script type="text/javascript" src="js/vue.js"></script>
+    <script type="text/javascript" src="js/axios.js"></script>
+    <link rel="stylesheet" type="text/css" href="style/bootstrap.css">
+    <script type="text/javascript" src="js/pagination.js"></script>
+
+
+	<script src="js/jquery.min.js"></script>
+ 	<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+	<script src="js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="js/dcalendar.picker.js"></script>
+    <link rel="stylesheet" type="text/css" href="style/dcalendar.picker.css?ddd">
+  </head>
+
+  <body>
+    <div id="app">
+
+      <input type="text" v-model="key"><button @click="search()">搜索</button>
+      <button @click="doAdd()">添加</button>
+      <table class="table table-striped table-bordered">
+       <tr>
+        <th>选择</th>
+        <th>id</th>
+        <th>名字</th>
+        <th>密码</th>
+        <th>性别</th>
+        <th>生日</th>
+        <th colspan="2">操作</th>
+        </tr>
+        <tr v-for="u in list">
+          <td><input type="checkbox" :value="u.id" v-model="ids"></td>
+          <td>{{u.id}}</td>
+          <td>{{u.username}}</td>
+          <td>{{u.password}}</td>
+          <td>{{u.sex}}</td>
+          <td>{{u.birthday | dateformat}}</td>
+          <td><button @click="doUpdate()">修改</button></td>
+          <td><button @click="doDelete()">删除</button></td>
+        </tr>
+      </table>
+
+      <div class="text-right" style="text-align:center">
+         <navigation :pages="pages" :current.sync="current" @navPage="pageList"></navigation>
+      </div>
+
+
+   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+      <div class="modal-body">
+       <div class="form-group">
+         <label for="username">用户名</label>
+         <input type="text" name="username" class="form-control" v-model="user.username">
+       </div>
+       <div class="form-group">
+          <label for="password">密码</label>
+         <input type="text" name="password" class="form-control" v-model="user.password">
+        </div> 
+         <div class="form-group">
+          <label for="sex">性别</label>
+          <input type="radio" name="sex" value="男" v-model="user.sex"> 男
+          <input type="radio" name="sex" value="女" v-model="user.sex"> 女
+         </div>
+         <div class="form-group">
+          <label for="birthday" >生日</label>
+         <input type="text" name="birthday" v-model="user.birthday" id="mydatepick"
+                class="form-control" >
+         </div>
+         <!--:value="user.birthday|dateformat"-->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary" @click="addOrUpdate()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+      
+      
+      
+    </div>
+  </body>
+</html>
+<script type="text/javascript">
+   var v = new Vue({
+     el:"#app",
+     data:{
+       current:1,
+       rows:2,
+       pages:100,
+       list:[],
+       key:"",
+       ids:[],
+       user:{},
+       
+     },
+     methods:{
+        getPage:function(){
+          //通过ajax请求分页数据
+          console.log("page?page="+this.current+"&rows="+this.rows+"&key="+this.key);
+          axios.get("page?page="+this.current+"&rows="+this.rows+"&key="+this.key).then(function(response){
+                v.list = response.data.list;
+                v.pages = response.data.pages;
+             
+          });
+        
+        },
+        search:function(){
+           console.log(this.key);
+           this.getPage();
+        
+        },
+        pageList:function(curPage){
+          this.current = curPage;
+          this.getPage();
+        },
+        doAdd:function(){
+            if(!$("#mydatepick")) {
+                $("#mydatepick").dcalendarpicker({format: 'yyyy-MM-dd'});
+            }
+          $("#myModal").modal("show");
+         
+        },
+        add:function(){
+          var birthday = $("#mydatepick").val();
+          console.log(birthday);
+          this.user.birthday = birthday;
+          axios.post("add",{"username":this.user.username,"password":this.user.password,
+          "sex":this.user.sex,"birthday":this.user.birthday}).then(function(response){
+             if(response.data==true){
+               console.log("===add ===");
+                v.user ={};
+                v.getPage();
+                $("#myModal").modal("hide");
+                // $("#mydatepick").dcalendarpicker({});
+             }
+          
+          });
+        
+        },
+        doUpdate:function(){
+            //alert(id);
+            var id = this.ids[0];
+            if(id!=null){
+               axios.get("goUpdate?id="+id).then(function(response){
+                   v.user = response.data;
+                   var t = new Date(v.user.birthday);
+                   v.user.birthday = t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate();
+                   //alert(v.user.birthday);
+              });
+               alert($("#mydatepick"));
+               if(!$("#mydatepick")){
+                   $("#mydatepick").dcalendarpicker({format:'yyyy-MM-dd'});
+               }
+                $("#myModal").modal("show");
+            }else{
+              alert("请先选择一条记录");
+            }
+           
+        },
+        update:function(){
+            var birthday = $("#mydatepick").val();
+            console.log(birthday);
+            this.user.birthday = birthday;
+          axios.post("update",{"id":this.user.id,"username":this.user.username,"password":this.user.password,
+          "sex":this.user.sex,"birthday":this.user.brithday}).then(function(response){
+             if(response.data==true){
+               console.log("===update ===");
+                v.user ={};
+                v.getPage();
+                $("#myModal").modal("hide");
+             }
+          
+          });
+        
+        },
+        addOrUpdate:function(){
+           if(this.user.id!=null){
+            this.update();
+            //console.log("--update---")
+           }else{
+             this.add();
+              //console.log("--add---")
+           }
+        
+        },
+        doDelete:function(){
+           var id = this.ids.join(",");  
+           console.log("delete?ids="+id);
+           axios.get("delete?ids="+id).then(function(response){
+                    v.getPage();
+           });
+          
+        },
+         dateformat:function(time){
+             var t = new Date(time);
+             return t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate();
+         }
+        
+        
+        
+     },
+     created:function(){
+       this.getPage();
+
+     },
+     filters:{
+        dateformat:function(time){
+         var t = new Date(time);
+          return t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate();
+        
+        }
+     
+     }
+   
+   });
+
+</script>

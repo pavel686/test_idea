@@ -1,0 +1,248 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<title>show.html</title>
+
+<meta name="keywords" content="keyword1,keyword2,keyword3">
+<meta name="description" content="this is my page">
+<meta name="content-type" content="text/html; charset=UTF-8">
+
+<!--<link rel="stylesheet" type="text/css" href="./styles.css">-->
+<script type="text/javascript" src="js/vue.js"></script>
+<script type="text/javascript" src="js/axios.js"></script>
+
+<script type="text/javascript" src="js/pagination.js"></script>
+<script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+
+<script
+	src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link href="style/bootstrap.css" rel="stylesheet">
+<link href="style/dcalendar.picker.css" rel="stylesheet">
+<script type="text/javascript" src="js/dcalendar.picker.js"></script>
+
+
+<link>
+</head>
+
+<body>
+
+	<div id="app" class="container">
+		<form class="form-inline">
+			<div class="form-group">
+
+				<input type="text" class="form-control" v-model="key"
+					id="exampleInputName2" placeholder="按姓名搜索">
+			</div>
+			<input class="btn btn-default" type="button" value="搜索"
+				@click="doSearch()"> <input class="btn btn-default"
+				type="button" value="添加" @click="doAdd()">
+		</form>
+
+		<table class="table table-bordered table-striped">
+			<tr>
+				<th>选择</th>
+				<th>序号</th>
+				<th>姓名</th>
+				<th>密码</th>
+				<th>性别</th>
+				<th>生日</th>
+				<th colspan="3">操作</th>
+			</tr>
+			<tr v-for="u in list">
+				<td><input type="checkbox" v-model="ids" :value="u.id"></td>
+				<td>{{u.id}}</td>
+				<td>{{u.username}}</td>
+				<td>{{u.password}}</td>
+				<td>{{u.sex}}</td>
+				<td>{{u.birthday|formatDate}}</td>
+
+				<td><input class="btn btn-default" type="button" value="修改"
+					@click="doUpdate()"> 
+					<input class="btn btn-default"type="button" value="删除" 
+					@click="doDelete()"></td>
+			</tr>
+		</table>
+		<div class="text-right" style="text-align: center;">
+			<navigation :pages="pages" :current.sync="pageNo" @navpage="pageList"></navigation>
+		</div>
+
+		<div id="myModal" class="modal fade" tabindex="-1" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-body">
+						<div class="form-group">
+							<label for="InputCode">用户名</label> <input type="text"
+								class="form-control" id="username" name="username"
+								:value="user.username" v-model="user.username">
+						</div>
+						<div class="form-group">
+							<label for="InputCode">密码</label> <input type="text"
+								class="form-control" id="password" name="password"
+								v-model="user.password">
+						</div>
+						<div class="form-group">
+							<label for>性别：</label> <label class="checkbox-inline"> <input
+								type="radio" name="sex" class="form-control" v-model="user.sex"
+								value="男" />男
+							</label> <label class="checkbox-inline"> <input type="radio"
+								name="sex" class="form-control" v-model="user.sex" value="女" />女
+							</label>
+						</div>
+						<div class="form-group">
+							<label for="birthday">生日</label> 
+							<input type="text" class="form-control" id='mydatepicker2' name="birthday"
+								:value="user.birthday|formatDate">
+						</div>
+					</div>
+					<div class="modal-footer">
+						<div class="form-group">
+							<button type="button" class="btn btn-default pull-left"
+								data-dismiss="modal">关闭</button>
+							<button type="submit" class="btn btn-primary"
+								@click="addOrUpdate()">提交</button>
+						</div>
+					</div>
+				</div>
+
+
+			</div>
+		</div>
+
+	</div>
+	<script type="text/javascript">
+		var v = new Vue({
+			el : "#app",
+			data : {
+				pageNo : 1,
+				pages : 100,
+				list : [],
+				key : "",
+				user : {
+				/* username:"",
+				password:"", */
+				},
+				ids : [],
+			},
+			methods : {
+				getPage : function() {
+					//console.log("page?page=" + this.pageNo + "&key="+ this.key);
+					axios.get("page?page=" + this.pageNo + "&key=" + this.key)
+							.then(function(response) {
+								v.list = response.data.list;
+								v.pages = response.data.pages;
+								// alert(v.list);
+							});
+				},
+				doSearch : function() {
+					this.getPage();
+				},
+				doAdd : function() {
+					$('#mydatepicker2').dcalendarpicker({
+						format:'yyyy-mm-dd'
+					}); 
+					$("#myModal").modal("show");
+				},
+				addOrUpdate : function() {
+					console.log("id=**" + this.user.id);
+					if (this.user.id != null) {
+						this.update();
+					} else {
+						this.add();
+					}
+				},
+
+				add:function() {
+					console.log(this.user.id);
+					//console.log($("#mydatepicker2").val());
+					//获得日期控件的值
+					this.user.birthday = $("#mydatepicker2").val();
+					//console.log("this.user.birthday="+this.user.birthday);
+					axios.post("add", {
+						"username" : this.user.username,
+						"password" : this.user.password,
+						"sex" : this.user.sex,
+						"birthday" : this.user.birthday
+					}).then(function(response) {
+						if (response.data == true) {
+							alert(response.data);
+							console.log(v.pageNo);
+							v.getPage(v.pageNo, v.key);
+							v.user = {};
+							$("#myModal").modal("hide");
+						}
+					});
+
+				},
+				doUpdate : function() {
+					var id = this.ids[0];
+					console.log("id=" + id);
+					if (id != null) {
+						axios.get("goUpdate?id=" + id).then(function(response) {
+							//response
+							v.user = response.data;
+						});
+						$('#mydatepicker2').dcalendarpicker({
+							format:'yyyy-mm-dd'
+						}); 
+						$("#myModal").modal();
+					} else {
+						alert("请选择一个id");
+					}
+				},
+				update : function() {
+					console.log("update-" + this.user.id);
+					//获得日期控件的值
+					this.user.birthday = $("#mydatepicker2").val();
+					axios.post("update", {
+						"id" : this.user.id,
+						"username" : this.user.username,
+						"password" : this.user.password,
+						"sex" : this.user.sex,
+						"birthday" : this.user.birthday
+					}).then(function(response) {
+						if (response.data == true) {
+							alert(response.data);
+							console.log(v.pageNo);
+							v.getPage(v.pageNo, v.key);
+							v.user = {};
+							$("#myModal").modal("hide");
+						}
+					});
+
+				},
+				doDelete : function() {
+					console.log(this.ids.join(","));
+					//ajax
+					v.getPage(v.pageNo, v.key);
+					v.ids =[];
+					
+				},
+				pageList : function(curPage) {
+					//根据当前页获取数据
+					this.pageNo = curPage;
+					console.log("当前页：" + this.pageNo);
+					console.log("page2?page=" + this.pageNo);
+					this.getPage(curPage, null);
+				}
+			},
+			created : function() {
+				this.getPage(1, null);
+			},
+
+			filters : {
+				formatDate : function(time) {
+					if (time != null && time != "") {
+						var date = new Date(time);
+						return date.getFullYear() + "-" + (date.getMonth() + 1)
+								+ "-" + date.getDate();
+					} else {
+						return "";
+					}
+				}
+			},
+
+		})
+	</script>
+</body>
+</html>
