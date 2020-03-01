@@ -26,6 +26,7 @@ public class UserController {
 	
 	@RequestMapping("show")
 	public String show(){
+		System.out.println("show");
 		return "show";
 	}
 
